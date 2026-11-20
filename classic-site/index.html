@@ -313,8 +313,24 @@ body.yel .pills a.ghost,body.yel .lightbtn{color:var(--navy)}
 #kanpai .sub{position:absolute;left:0;right:0;bottom:9vh;text-align:center;font-weight:700;letter-spacing:.5em;font-size:clamp(12px,1.3vw,16px);color:var(--gold);opacity:0;transform:translateY(20px)}
 #kanpai .sub small{display:block;font-weight:500;letter-spacing:.14em;font-size:.85em;margin-top:12px;color:var(--cream);opacity:.75}
 #kanpai .stamp{display:none}
-#boot{position:fixed;inset:0;z-index:100;background:#0a1229;color:var(--gold);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .9s}
-#boot.out{opacity:0;pointer-events:none}
+#boot{position:fixed;inset:0;z-index:100;color:var(--gold);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+#boot .door{position:absolute;top:0;bottom:0;width:50.5%;background:#0a1229;z-index:-1;transition:transform 1.25s cubic-bezier(.77,0,.18,1)}
+#boot .door.l{left:0;box-shadow:inset -1px 0 0 rgba(232,182,76,0)}
+#boot .door.r{right:0}
+#boot .seam{position:absolute;left:50%;top:50%;width:2px;height:0;margin-left:-1px;background:linear-gradient(transparent,#f4cf7a 20%,#fff3cf 50%,#f4cf7a 80%,transparent);box-shadow:0 0 18px 4px rgba(244,207,122,.55);transform:translateY(-50%);opacity:0;transition:height .55s cubic-bezier(.6,0,.2,1),opacity .3s}
+#boot.unlock p,#boot.unlock>i{opacity:0;transition:opacity .35s}
+#boot.unlock svg{animation-play-state:paused}
+#boot svg .key{transform-origin:50px 50px;transition:transform .7s cubic-bezier(.5,-.6,.3,1.6)}
+#boot.unlock svg .key{transform:rotate(90deg)}
+#boot svg circle{transition:stroke-width .4s,filter .4s}
+#boot.unlock svg circle{stroke-width:3.5;filter:drop-shadow(0 0 6px rgba(244,207,122,.9))}
+#boot.seamon .seam{height:120vh;opacity:1}
+#boot.seamon svg{transform:scale(1.25);filter:drop-shadow(0 0 14px rgba(244,207,122,.9));transition:transform .55s,filter .55s}
+#boot.open .door.l{transform:translateX(-101%)}
+#boot.open .door.r{transform:translateX(101%)}
+#boot.open svg{opacity:0;transform:scale(2.2);transition:opacity .6s,transform .9s cubic-bezier(.6,0,.2,1)}
+#boot.open .seam{opacity:0;transition:opacity .7s .15s}
+#boot.open{pointer-events:none}
 #boot svg{width:64px;animation:bootspin 3.2s linear infinite}
 @keyframes bootspin{to{transform:rotate(360deg)}}
 #boot p{font-size:11px;font-weight:700;letter-spacing:.34em;color:var(--cream)}
@@ -450,13 +466,19 @@ body.yel .pills a.ghost,body.yel .lightbtn{color:var(--navy)}
 <canvas id="can" aria-hidden="true"></canvas>
 <canvas id="can3" aria-hidden="true"></canvas>
 <canvas id="kfx" aria-hidden="true"></canvas>
-<div id="boot" role="status" aria-live="polite"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="2"/><path fill="currentColor" d="M50 22l7.6 17.4 18.9 1.8-14.3 12.5 4.2 18.5L50 62.6 33.6 72.2l4.2-18.5L23.5 41.2l18.9-1.8z"/></svg><p><b>000</b>%</p><i><i></i></i></div>
+<div id="boot" role="status" aria-live="polite"><div class="door l"></div><div class="door r"></div><div class="seam"></div><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="2"/><path class="key" fill="currentColor" d="M50 22l7.6 17.4 18.9 1.8-14.3 12.5 4.2 18.5L50 62.6 33.6 72.2l4.2-18.5L23.5 41.2l18.9-1.8z"/></svg><p><b>000</b>%</p><i><i></i></i></div>
 <script>
 (() => {
   const el = document.getElementById('boot'), n = el.querySelector('b'), bar = el.querySelector('i i');
   let shown = 0, target = 0, done = false;
   window.__boot = f => { target = Math.max(target, Math.min(.92, f * .92)); };
-  const finish = () => { if (done) return; done = true; target = 1; setTimeout(() => el.classList.add('out'), 350); setTimeout(() => el.remove(), 1300); };
+  // star turns like a key, a gold seam opens down the middle, and the two halves slide apart
+  const finish = () => { if (done) return; done = true; target = 1;
+    const svg = el.querySelector('svg'), m = getComputedStyle(svg).transform;   // freeze the spin where it is
+    setTimeout(() => { if (m && m !== 'none') svg.style.transform = m; svg.style.animation = 'none'; el.classList.add('unlock'); requestAnimationFrame(() => { svg.style.transition = 'transform .7s cubic-bezier(.5,-.6,.3,1.6)'; svg.style.transform = 'rotate(0deg)'; }); }, 450);
+    setTimeout(() => { svg.style.transform = ''; svg.style.transition = ''; el.classList.add('seamon'); }, 1250);
+    setTimeout(() => el.classList.add('open'), 1750);
+    setTimeout(() => el.remove(), 3200); };
   (function tick(){ shown += (target - shown) * .12; n.textContent = String(Math.round(shown * 100)).padStart(3, '0'); bar.style.width = (shown * 100).toFixed(1) + '%'; if (!done || shown < .995) requestAnimationFrame(tick); })();
   const iv = setInterval(() => { if ((window.__three && window.__three.ready) || document.body.classList.contains('nofb')) { clearInterval(iv); finish(); } }, 120);
   setTimeout(finish, 25000);   // never trap the reader
@@ -2961,7 +2983,7 @@ init().catch(e => console.warn('three.js renderer not available, keeping the bui
       facts: [['HOPS & MALT', 'Partly from Hokkaido']] },
     { t: 'Beer<br>Museum.', line: '歴代のビールを、飲み比べる。',
       body: 'サッポロビールの始まりは、1876年に札幌にできた開拓使麦酒醸造所。博物館では、クラシック・黒ラベル・創業当時の味を再現した開拓使麦酒の3種を飲み比べできる。',
-      facts: [['SINCE', '1876'], ['CLASSIC', 'Since 1985']] }
+      facts: [['SAPPORO BEER', '1876年 創業'], ['CLASSIC', '1985年 発売'], ['TASTING', '3種を飲み比べ']] }
   ];
   cards.forEach(c => {
     c.addEventListener('pointerenter', () => c.classList.add('touch'));
